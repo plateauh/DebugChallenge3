@@ -58,13 +58,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getDefinition(word: String): String{
+    private suspend fun getDefinition(word: String): String{
         var response = ""
         try {
             response = URL("https://api.dictionaryapi.dev/api/v2/entries/en/house").readText(Charsets.UTF_8)
         }catch (e: Exception){
             println("Error: $e")
-            Toast.makeText(this, "Unable to get data", Toast.LENGTH_LONG).show()
+            // Bug 2: The toast was crashing the app because it was executed on IO Scope
+            withContext(Main){
+                Toast.makeText(this@MainActivity, "Unable to get data", Toast.LENGTH_LONG).show()
+            }
         }
         return response
     }
