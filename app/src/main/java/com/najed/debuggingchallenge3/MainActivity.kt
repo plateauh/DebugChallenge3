@@ -61,7 +61,8 @@ class MainActivity : AppCompatActivity() {
     private suspend fun getDefinition(word: String): String{
         var response = ""
         try {
-            response = URL("https://api.dictionaryapi.dev/api/v2/entries/en/house").readText(Charsets.UTF_8)
+            // Bug 4: "house" was always passed
+            response = URL("https://api.dictionaryapi.dev/api/v2/entries/en/$word").readText(Charsets.UTF_8)
         }catch (e: Exception){
             println("Error: $e")
             // Bug 2: The toast was crashing the app because it was executed on IO Scope
