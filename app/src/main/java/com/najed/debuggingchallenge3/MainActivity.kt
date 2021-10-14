@@ -81,6 +81,8 @@ class MainActivity : AppCompatActivity() {
             val word = JSONObject(main.toString()).getString("word")
             val inside = jsonArray.getJSONObject(0).getJSONArray("meanings")
                     .getJSONObject(0)
+                    // Bug 3: Incorrect navigation inside JSON Object
+                    .getJSONArray("definitions").getJSONObject(0)
             val definition = JSONObject(inside.toString()).getString("definition")
             Log.d("MAIN", "WORD: $word $definition")
             definitions.add(arrayListOf(word, definition))
