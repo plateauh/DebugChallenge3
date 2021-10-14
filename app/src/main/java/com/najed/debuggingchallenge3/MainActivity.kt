@@ -1,5 +1,8 @@
 package com.najed.debuggingchallenge3
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -31,6 +34,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val cm = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
         rvMain = findViewById(R.id.rvMain)
         rvAdapter = RVAdapter(definitions)
         rvMain.adapter = rvAdapter
@@ -39,7 +44,13 @@ class MainActivity : AppCompatActivity() {
         etWord = findViewById(R.id.etWord)
         btSearch = findViewById(R.id.btSearch)
         btSearch.setOnClickListener {
-            requestAPI()
+            val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
+            if (activeNetwork?.isConnectedOrConnecting == true){
+                requestAPI()
+            }
+            // enhancement: inform user when there is no internet connection
+            else
+                Toast.makeText(this, "No internet connection", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -54,7 +65,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }else{
-            Toast.makeText(this, "Please enter a word", Toast.LENGTH_LONG)
+            // Bug 5: the toast wasn't shown
+            Toast.makeText(this, "Please enter a word", Toast.LENGTH_LONG).show()
         }
     }
 
