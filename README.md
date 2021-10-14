@@ -12,4 +12,4 @@ Reported Bugs:
     
     the app crashes if there is no internet connection -> Didn't happen, but an internet connection check was added to inform the user that the issue is with the connection specifically
     
-    the app crashes when an invalid word is entered -> Didn't happen at all 🧐 maybe that was related the toast with the wrong scope?
+    the app crashes when an invalid word is entered -> Didn't happen at all 🧐 maybe that was related to the toast with the wrong scope?
