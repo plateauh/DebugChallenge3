@@ -11,6 +11,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.najed.debuggingchallenge3.api.APIClient
+import com.najed.debuggingchallenge3.api.APIInterface
+import com.najed.debuggingchallenge3.api.model.Entry
+import com.najed.debuggingchallenge3.api.model.Meaning
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -19,12 +23,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.net.URL
 
-
 class MainActivity : AppCompatActivity() {
-    private val definitions = arrayListOf<ArrayList<String>>()
-
+    private lateinit var definitions: ArrayList<ArrayList<String>>
     private lateinit var rvMain: RecyclerView
     private lateinit var rvAdapter: RVAdapter
     private lateinit var etWord: EditText
@@ -34,6 +39,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        definitions = arrayListOf()
         val cm = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         rvMain = findViewById(R.id.rvMain)
@@ -46,63 +52,34 @@ class MainActivity : AppCompatActivity() {
         btSearch.setOnClickListener {
             val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
             if (activeNetwork?.isConnectedOrConnecting == true){
-                requestAPI()
+                setDefinitions(etWord.text.toString())
             }
-            // enhancement: inform user when there is no internet connection
             else
                 Toast.makeText(this, "No internet connection", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun requestAPI(){
-        if(etWord.text.isNotEmpty()){
-            CoroutineScope(IO).launch {
-                val data = async{
-                    getDefinition(etWord.text.toString())
-                }.await()
-                if(data.isNotEmpty()){
-                    updateRV(data)
+    private fun setDefinitions(word: String) {
+        val apiInterface = APIClient().getClient()?.create(APIInterface::class.java)
+        val call: Call<Entry?>? = apiInterface!!.getWord(word)
+        call?.enqueue(object: Callback<Entry?> {
+
+            override fun onResponse(call: Call<Entry?>, response: Response<Entry?>) {
+                val firstEntry = response.body()!![0]
+                val tempArray = arrayListOf<String>()
+                tempArray.add(firstEntry.word)
+                for (meaning in firstEntry.meanings) {
+                    for (definition in meaning.definitions)
+                        tempArray.add(definition.definition)
                 }
+                definitions.add(tempArray)
+                rvMain.adapter = RVAdapter(definitions)
             }
-        }else{
-            // Bug 5: the toast wasn't shown
-            Toast.makeText(this, "Please enter a word", Toast.LENGTH_LONG).show()
-        }
-    }
 
-    private suspend fun getDefinition(word: String): String{
-        var response = ""
-        try {
-            // Bug 4: "house" was always passed
-            response = URL("https://api.dictionaryapi.dev/api/v2/entries/en/$word").readText(Charsets.UTF_8)
-        }catch (e: Exception){
-            println("Error: $e")
-            // Bug 2: The toast was crashing the app because it was executed on IO Scope
-            withContext(Main){
-                Toast.makeText(this@MainActivity, "Unable to get data", Toast.LENGTH_LONG).show()
+            override fun onFailure(call: Call<Entry?>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "Error getting data ${t.message}", Toast.LENGTH_SHORT).show()
+                call.cancel()
             }
-        }
-        return response
-    }
-
-    private suspend fun updateRV(result: String){
-        withContext(Main){
-            Log.d("MAIN", "DATA: $result")
-
-            val jsonArray = JSONArray(result)
-            val main = jsonArray[0]
-            val word = JSONObject(main.toString()).getString("word")
-            val inside = jsonArray.getJSONObject(0).getJSONArray("meanings")
-                    .getJSONObject(0)
-                    // Bug 3: Incorrect navigation inside JSON Object
-                    .getJSONArray("definitions").getJSONObject(0)
-            val definition = JSONObject(inside.toString()).getString("definition")
-            Log.d("MAIN", "WORD: $word $definition")
-            definitions.add(arrayListOf(word, definition))
-            rvAdapter.update()
-            etWord.text.clear()
-            etWord.clearFocus()
-            rvMain.scrollToPosition(definitions.size - 1)
-        }
+        })
     }
 }

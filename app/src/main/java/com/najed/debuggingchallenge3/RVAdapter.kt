@@ -3,6 +3,8 @@ package com.najed.debuggingchallenge3
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.najed.debuggingchallenge3.api.model.Entry
+import com.najed.debuggingchallenge3.api.model.Meaning
 import com.najed.debuggingchallenge3.databinding.ItemRowBinding
 
 class RVAdapter(private var definitions: ArrayList<ArrayList<String>>): RecyclerView.Adapter<RVAdapter.ItemViewHolder>() {
@@ -20,6 +22,10 @@ class RVAdapter(private var definitions: ArrayList<ArrayList<String>>): Recycler
         holder.binding.apply {
             tvWord.text = definition[0]
             tvDefinition.text = definition[1]
+
+            tvDefinition.setOnClickListener{
+                // do something
+            }
         }
     }
 
