@@ -1,6 +1,7 @@
 package com.najed.debuggingchallenge3
 
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.os.Bundle
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.najed.debuggingchallenge3.api.APIClient
 import com.najed.debuggingchallenge3.api.APIInterface
+import com.najed.debuggingchallenge3.api.model.Definition
 import com.najed.debuggingchallenge3.api.model.Entry
 import com.najed.debuggingchallenge3.api.model.Meaning
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         val cm = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         rvMain = findViewById(R.id.rvMain)
-        rvAdapter = RVAdapter(definitions)
+        rvAdapter = RVAdapter(definitions, this)
         rvMain.adapter = rvAdapter
         rvMain.layoutManager = LinearLayoutManager(this)
 
@@ -51,8 +53,9 @@ class MainActivity : AppCompatActivity() {
         btSearch = findViewById(R.id.btSearch)
         btSearch.setOnClickListener {
             val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
-            if (activeNetwork?.isConnectedOrConnecting == true){
+            if (activeNetwork?.isConnectedOrConnecting == true) {
                 setDefinitions(etWord.text.toString())
+                etWord.setText("")
             }
             else
                 Toast.makeText(this, "No internet connection", Toast.LENGTH_LONG).show()
@@ -65,15 +68,15 @@ class MainActivity : AppCompatActivity() {
         call?.enqueue(object: Callback<Entry?> {
 
             override fun onResponse(call: Call<Entry?>, response: Response<Entry?>) {
-                val firstEntry = response.body()!![0]
                 val tempArray = arrayListOf<String>()
-                tempArray.add(firstEntry.word)
-                for (meaning in firstEntry.meanings) {
-                    for (definition in meaning.definitions)
-                        tempArray.add(definition.definition)
+                for (entry in response.body()!!) {
+                    tempArray.add(entry.word)
+                    for (meaning in entry.meanings)
+                        for (definition in meaning.definitions)
+                            tempArray.add(definition.definition)
                 }
                 definitions.add(tempArray)
-                rvMain.adapter = RVAdapter(definitions)
+                rvMain.adapter = RVAdapter(definitions, this@MainActivity)
             }
 
             override fun onFailure(call: Call<Entry?>, t: Throwable) {
@@ -81,5 +84,11 @@ class MainActivity : AppCompatActivity() {
                 call.cancel()
             }
         })
+    }
+
+    fun navigate(definition: ArrayList<String>) {
+        val intent = Intent(this, WordDetailsActivity::class.java)
+        intent.putExtra("defs", definition)
+        startActivity(intent)
     }
 }
